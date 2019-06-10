@@ -1,0 +1,4 @@
+tensorflow==1.4.0
+# tensorflow-gpu==1.4.0
+pandas==0.22.0
+matplotlib==3.0.2
