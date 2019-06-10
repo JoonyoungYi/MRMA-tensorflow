@@ -1,12 +1,14 @@
 import os
 import time
 import math
+import random
 
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .utils.batch import BatchManager
+from common.dataset import DatasetManager
+from common.batch import BatchManager
 from .configs import *
 from .models import init_models
 
@@ -36,15 +38,42 @@ def _train(session, kind, models, batch_manager):
     min_valid_iter = 0
     final_test_rmse = float('Inf')
 
+    i = batch_manager.train_data[:, 0]
+    j = batch_manager.train_data[:, 1]
+    r = batch_manager.train_data[:, 2]
+
+    for assign_idx, assign_op in enumerate(models['assign_ops']):
+        session.run(
+            assign_op,
+            feed_dict={
+                models['i']: i,
+                models['j']: j,
+                models['r']: r,
+            })
+
     for iter in range(N_ITER):
         print('\n>> ITER:', iter)
 
-        i = batch_manager.train_data[:, 0]
-        j = batch_manager.train_data[:, 1]
-        r = batch_manager.train_data[:, 2]
+        # for _ in range(100):
+        #     results = session.run(
+        #         [
+        #             models['train_ops'][1], models['_alpha'], models['loss'],
+        #             models['rmse']
+        #         ],
+        #         feed_dict={
+        #             models['i']: i,
+        #             models['j']: j,
+        #             models['r']: r,
+        #         })
+        #     loss, rmse = results[-2], results[-1]
+        #     print(loss, rmse)
+        #     print(np.mean(results[-3]))
+        #     if math.isnan(loss):
+        #         raise Exception("NaN found!")
+        # input('')
 
         for train_op in models['train_ops']:
-            for _ in range(1):
+            for _ in range(100):
                 results = session.run(
                     [train_op, models['loss'], models['rmse']],
                     feed_dict={
@@ -54,27 +83,19 @@ def _train(session, kind, models, batch_manager):
                     })
                 loss, rmse = results[-2], results[-1]
                 print(loss, rmse)
-            # input('!')
-        if math.isnan(loss):
-            raise Exception("NaN found!")
+                if math.isnan(loss):
+                    raise Exception("NaN found!")
+            input('')
 
-        print('assign_ops!')
         for assign_op in models['assign_ops']:
-            session.run(
-                assign_op,
+            _, loss, rmse = session.run(
+                (assign_op, models['loss'], models['rmse']),
                 feed_dict={
                     models['i']: i,
                     models['j']: j,
                     models['r']: r,
                 })
 
-            loss, rmse = session.run(
-                (models['loss'], models['rmse']),
-                feed_dict={
-                    models['i']: i,
-                    models['j']: j,
-                    models['r']: r,
-                })
             # print(' -', loss, rmse)
             # print(' -', mu_alpha, b_alpha)
             if math.isnan(loss):
@@ -95,7 +116,7 @@ def _train(session, kind, models, batch_manager):
 
 def main(kind):
     batch_manager = BatchManager(kind)
-    models = init_models(batch_manager)
+    models = init_models(batch_manager, kind)
 
     saver = tf.train.Saver()
     gpu_options = tf.GPUOptions()
@@ -106,3 +127,11 @@ def main(kind):
     _train(session, kind, models, batch_manager)
 
     session.close()
+
+
+if __name__ == '__main__':
+    # kind = DatasetManager.KIND_MOVIELENS_100K
+    kind = DatasetManager.KIND_MOVIELENS_1M
+    # kind = DatasetManager.KIND_MOVIELENS_10M
+
+    main(kind)

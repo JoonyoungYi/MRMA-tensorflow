@@ -6,7 +6,7 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .utils.batch import BatchManager
+from common.batch import BatchManager
 from .configs import *
 from .models import init_models
 
@@ -92,5 +92,5 @@ def main(kind, k):
 
 
 if __name__ == '__main__':
-    for k in range(30, 310, 10):
-        main("movielens-1m", k=k)
+    for k in range(10, 310, 10):
+        main("movielens-100k", k=k)
