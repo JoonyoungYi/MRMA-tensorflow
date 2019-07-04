@@ -43,6 +43,8 @@ def _train(session, kind, models, batch_manager):
     r = batch_manager.train_data[:, 2]
 
     for assign_idx, assign_op in enumerate(models['assign_ops']):
+        if assign_idx == 4 or assign_idx == 6:
+            continue
         session.run(
             assign_op,
             feed_dict={
@@ -54,26 +56,8 @@ def _train(session, kind, models, batch_manager):
     for iter in range(N_ITER):
         print('\n>> ITER:', iter)
 
-        # for _ in range(100):
-        #     results = session.run(
-        #         [
-        #             models['train_ops'][1], models['_alpha'], models['loss'],
-        #             models['rmse']
-        #         ],
-        #         feed_dict={
-        #             models['i']: i,
-        #             models['j']: j,
-        #             models['r']: r,
-        #         })
-        #     loss, rmse = results[-2], results[-1]
-        #     print(loss, rmse)
-        #     print(np.mean(results[-3]))
-        #     if math.isnan(loss):
-        #         raise Exception("NaN found!")
-        # input('')
-
         for train_op in models['train_ops']:
-            for _ in range(100):
+            for _ in range(1):
                 results = session.run(
                     [train_op, models['loss'], models['rmse']],
                     feed_dict={
@@ -82,10 +66,19 @@ def _train(session, kind, models, batch_manager):
                         models['r']: r,
                     })
                 loss, rmse = results[-2], results[-1]
-                print(loss, rmse)
                 if math.isnan(loss):
                     raise Exception("NaN found!")
-            input('')
+
+        # results = session.run(
+        #     models['train_ops'] + [models['loss'], models['rmse']],
+        #     feed_dict={
+        #         models['i']: i,
+        #         models['j']: j,
+        #         models['r']: r,
+        #     })
+        # loss, rmse = results[-2], results[-1]
+        # if math.isnan(loss):
+        #     raise Exception("NaN found!")
 
         for assign_op in models['assign_ops']:
             _, loss, rmse = session.run(
@@ -96,10 +89,19 @@ def _train(session, kind, models, batch_manager):
                     models['r']: r,
                 })
 
-            # print(' -', loss, rmse)
-            # print(' -', mu_alpha, b_alpha)
             if math.isnan(loss):
                 raise Exception("NaN found!")
+
+        # results = session.run(
+        #     models['assign_ops'] + [models['loss'], models['rmse']],
+        #     feed_dict={
+        #         models['i']: i,
+        #         models['j']: j,
+        #         models['r']: r,
+        #     })
+        # loss, rmse = results[-2], results[-1]
+        # if math.isnan(loss):
+        #     raise Exception("NaN found!")
 
         valid_rmse, test_rmse = _validate(session, models, batch_manager)
         if valid_rmse < min_valid_rmse:
